@@ -1,0 +1,18 @@
+{
+    "name": "webmgine/object-manager",
+    "description": "PHP object manager with dependencies injection based on namespaces/directories association",
+    "authors": [
+        {
+            "name": "Michel Gauthier",
+            "email": "web.mgauthier@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.0.0",
+        "webmgine/auto-loader": "*"
+    },
+    "autoload": {
+        "psr-4": {"Webmgine\\": "src/"}
+    }
+}

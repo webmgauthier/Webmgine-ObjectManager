@@ -43,7 +43,7 @@ class ObjectManager{
             $this->state['error'] = true;
             $this->state['logs'][] = 'Class '.$classRequirement.' is missing';
         }
-        $this->tmpDir = __DIR__.'/tmp/';
+        $this->tmpDir = __DIR__.'/../tmp/';
     }
 
     public function filePathFromNamespace(string $namespace, string $fileExt = '.php'):string{
