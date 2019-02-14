@@ -23,7 +23,7 @@ class ObjectManager{
     ];
     protected $jsonMemory = [];
     protected $objectMemory = [];
-    protected $requirments = ['Webmgine/AutoLoader'];
+    protected $classRequirements = ['Webmgine/AutoLoader'];
     protected $tmpDir = '';
 
     public function __construct(string $baseDir, bool $devMode = false){
@@ -35,13 +35,13 @@ class ObjectManager{
         }
         $this->baseDir = $this->baseDir.'/';
         $this->devMode = $devMode;
-        foreach($this->requirments AS $requirment){
-            $requirment = '\\'.str_replace('/', '\\', $requirment);
-            if(class_exists($requirment)){
+        foreach($this->classRequirements AS $classRequirement){
+            $classRequirement = '\\'.str_replace('/', '\\', $classRequirement);
+            if(class_exists($classRequirement)){
                 continue;
             }
             $this->state['error'] = true;
-            $this->state['logs'][] = 'Class '.$requirment.' is missing';
+            $this->state['logs'][] = 'Class '.$classRequirement.' is missing';
         }
         $this->tmpDir = __DIR__.'/tmp/';
     }

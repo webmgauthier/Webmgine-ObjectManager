@@ -2,6 +2,10 @@
 
 PHP object manager with dependencies injection based on namespaces/directories association
 
+## Requirements
+
+This class use Webmgine-AutoLoader as PHP class autoloader
+
 ## Getting Started
 
 Include **ObjectManager.php** in your project.
