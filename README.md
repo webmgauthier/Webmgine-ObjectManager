@@ -8,7 +8,11 @@ This class use Webmgine-AutoLoader as PHP class autoloader
 
 ## Getting Started
 
-Include **ObjectManager.php** in your project.
+Use composer autload
+```
+require __DIR__ . '/vendor/autoload.php';
+```
+or include **src/ObjectManager.php** in your project.
 
 Create object manager instance with your project base directory
 ```
