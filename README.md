@@ -20,7 +20,7 @@ Load object
 $object = $objectManager->getObject('Namespace/Class');
 ```
 
-You can set arguments witch are not object in a array using array key => construct var name association
+You can set custom arguments in a array using **array key** => **construct var name** association
 ```
 $object = $objectManager->getObject('Namespace/Class', ['varX' => 'exemple']);
 ```
