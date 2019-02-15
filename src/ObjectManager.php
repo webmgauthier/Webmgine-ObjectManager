@@ -53,7 +53,7 @@ class ObjectManager{
             return $this->objectMemory[$namespace];
         }
         $realNamespace = '\\'.str_replace('/', '\\', $namespace);
-        $dependencies = $this->setDependencies($namespace, $arguments);
+        $dependencies = $this->setDependencies($namespace, $arguments, $reload);
         if($this->state['error']){
             return null;
         }
@@ -79,7 +79,7 @@ class ObjectManager{
         return $this->objectMemory[$namespace];
     }
 
-    public function setDependencies(string $namespace, array $arguments = []):bool{
+    public function setDependencies(string $namespace, array $arguments = [], bool $reload = false):bool{
         $realNamespace = str_replace('/', '\\', $namespace);
         // Check if construct method exist
         if(!class_exists($realNamespace)){
@@ -94,7 +94,7 @@ class ObjectManager{
         }
         // Check if file index exists
         $indexFilePath = $this->tmpDir.md5(str_replace('\\', '/', $namespace)).'.tmp';
-        if(!$this->devMode && realpath($indexFilePath) !== false){
+        if((!$this->devMode && !$reload) && realpath($indexFilePath) !== false){
             return true;
         }
         $constructRequirements = $construct->getParameters();
@@ -104,35 +104,40 @@ class ObjectManager{
             }
 			return false;
         }
-        if($this->devMode && realpath($indexFilePath) !== false){
-            // Compare construct requirements with index file
-            $currentIndexState = true;
-            $currentIndexReq = json_decode(file_get_contents($indexFilePath));
-            foreach($constructRequirements AS $req){
-                if(
-                    is_null($req->getType()) ||
-                    in_array($req->getType(), $this->baseVarType)
-                ){
-                    if(isset($arguments[$req->getName()]) && $currentIndexReq['v_'.$req->getName()] === $arguments[$req->getName()]){
-                        continue;
+        if(realpath($indexFilePath) !== false){
+            if($this->devMode){
+                // Compare construct requirements with index file
+                $currentIndexState = true;
+                $currentIndexReq = json_decode(file_get_contents($indexFilePath));
+                foreach($constructRequirements AS $req){
+                    if(
+                        is_null($req->getType()) ||
+                        in_array($req->getType(), $this->baseVarType)
+                    ){
+                        if(isset($arguments[$req->getName()]) && $currentIndexReq['v_'.$req->getName()] === $arguments[$req->getName()]){
+                            continue;
+                        }
+                        $currentIndexState = false;
+                        break;
                     }
-                    $currentIndexState = false;
-                    break;
+                    $reqName = $req->getName();
+                    $reqType = $req->getType()->getName();
+                    if(
+                        !isset($currentIndexReq->$reqName) ||
+                        $currentIndexReq->$reqName !== $reqType
+                    ){
+                        $currentIndexState = false;
+                        break;
+                    }
                 }
-                $reqName = $req->getName();
-                $reqType = $req->getType()->getName();
-                if(
-                    !isset($currentIndexReq->$reqName) ||
-                    $currentIndexReq->$reqName !== $reqType
-                ){
-                    $currentIndexState = false;
-                    break;
+                if($currentIndexState){
+                    return true;
                 }
+                unlink($indexFilePath);
             }
-            if($currentIndexState){
-                return true;
+            else if($reload){
+                unlink($indexFilePath);
             }
-            unlink($indexFilePath);
         }
         // List dependencies
         $dependencies = [];

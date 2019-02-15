@@ -48,5 +48,5 @@ class ExempleClass{
 
 Object are cached by namespace. If you load multiple time the same object you will receive a copy of the first one loaded (newly created object won't get new custom arguments if you set any after the inital load). It is possible to force the object to reset by setting true as the third argument for the **getObject** method.
 ```
-$object = $objectManager->getObject('Namespace/Class', [], false);
+$object = $objectManager->getObject('Namespace/Class', [], true);
 ```
