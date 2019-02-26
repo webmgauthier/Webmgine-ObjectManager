@@ -45,10 +45,12 @@ class ObjectManager{
         return $filePath;
     }
 
+    public function getNewObject(string $namespace, array $arguments = []){
+        return $this->getObject($namespace, $arguments, true);
+    }
+
     public function getObject(string $namespace, array $arguments = [], bool $reload = false){
-        if($this->state['error']){
-            return null;
-        }
+        $this->state['error'] = false;
         if($reload == false && isset($this->objectMemory[$namespace])){
             return $this->objectMemory[$namespace];
         }
