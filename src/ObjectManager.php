@@ -45,14 +45,10 @@ class ObjectManager{
         return $filePath;
     }
 
-    public function getNewObject(string $namespace, array $arguments = []){
-        return $this->getObject($namespace, $arguments, true);
-    }
-
-    public function getObject(string $namespace, array $arguments = [], bool $reload = false){
+    public function getObject(string $namespace, array $arguments = [], bool $reload = true){
         $this->state['error'] = false;
-        if($reload == false && isset($this->objectMemory[$namespace])){
-            return $this->objectMemory[$namespace];
+        if($reload === false && isset($this->objectMemory[$namespace]['object'])){
+            return $this->objectMemory[$namespace]['object'];
         }
         $realNamespace = '\\'.str_replace('/', '\\', $namespace);
         $dependencies = $this->setDependencies($namespace, $arguments, $reload);
@@ -60,8 +56,8 @@ class ObjectManager{
             return null;
         }
         if(!$dependencies){
-            $this->objectMemory[$namespace] = new $realNamespace;
-            return $this->objectMemory[$namespace];
+            $this->objectMemory[$namespace]['object'] = new $realNamespace;
+            return $this->objectMemory[$namespace]['object'];
         }
         $indexFilePath = $this->tmpDir.md5(str_replace('\\', '/', $namespace)).'.tmp';
         $dependenciesList = json_decode(file_get_contents($indexFilePath));
@@ -77,8 +73,9 @@ class ObjectManager{
             $first = false;
         }
         $objectData .= ')';
-        eval('$this->objectMemory[$namespace] = new '.$realNamespace.$objectData.';');
-        return $this->objectMemory[$namespace];
+        eval('$this->objectMemory[$namespace]["object"] = new '.$realNamespace.$objectData.';');
+		$this->objectMemory[$namespace]['dependencies'] = $dependencies;
+        return $this->objectMemory[$namespace]['object'];
     }
 
     public function setDependencies(string $namespace, array $arguments = [], bool $reload = false):bool{
