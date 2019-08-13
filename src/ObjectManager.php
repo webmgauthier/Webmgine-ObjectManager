@@ -5,6 +5,7 @@ class ObjectManager{
 
     protected $baseDir = '';
     protected $baseVarType = [
+        "bool",
         "boolean",
         "integer",
         "double",
