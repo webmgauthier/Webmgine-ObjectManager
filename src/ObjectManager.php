@@ -143,9 +143,12 @@ class ObjectManager{
         // List dependencies
         $dependencies = [];
 		foreach($constructRequirements AS $req){
+            $type = $req->getType();
+            assert($type instanceof \ReflectionNamedType);
+            $type = $type->getName();
             if(
-                is_null($req->getType()) ||
-                in_array($req->getType(), $this->baseVarType)
+                is_null($type) ||
+                in_array($type, $this->baseVarType)
             ){
                 if(!isset($arguments[$req->getName()])){
                     if($req->isOptional()){

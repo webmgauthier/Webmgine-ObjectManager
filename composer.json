@@ -1,6 +1,6 @@
 {
     "name": "webmgine/object-manager",
-    "description": "PHP object manager with dependencies injection based on namespaces/directories association",
+    "description": "Simple PHP object manager that use directories/namespaces pairing to autoload class.",
     "authors": [
         {
             "name": "Michel Gauthier",
@@ -9,7 +9,7 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": ">=7.0.0",
+        "php": ">=7.2.0",
         "webmgine/auto-loader": ">=1.0.0"
     },
     "autoload": {
