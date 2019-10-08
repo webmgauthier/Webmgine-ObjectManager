@@ -7,6 +7,7 @@ class ObjectManager{
     protected $baseVarType = [
         "bool",
         "boolean",
+        "int",
         "integer",
         "double",
         "string",
@@ -15,7 +16,7 @@ class ObjectManager{
         "resource",
         "resource (closed)",
         "NULL",
-        "unknown type",
+        "unknown type"
     ];
     protected $devMode = false;
     protected $state = [
