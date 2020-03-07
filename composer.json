@@ -1,6 +1,6 @@
 {
     "name": "webmgine/object-manager",
-    "description": "PHP object manager with dependencies injection based on namespaces/directories association",
+    "description": "Static class to load objects with dependencies injection",
     "authors": [
         {
             "name": "Michel Gauthier",
@@ -9,8 +9,7 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": ">=7.0.0",
-        "webmgine/auto-loader": ">=1.0.0"
+        "php": ">=7.4.0"
     },
     "autoload": {
         "psr-4": {"Webmgine\\": "src/"}

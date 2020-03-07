@@ -1,34 +1,32 @@
 # Webmgine - ObjectManager
 
-PHP object manager with dependencies injection based on namespaces/directories association
+Static class to load objects with dependencies injection
 
 ## Requirements
 
-This class use Webmgine-AutoLoader as PHP class autoloader
+PHP >=7.4
+This class need composer autoload
 
 ## Getting Started
-
-Use composer autload (or include **src/ObjectManager.php** in your project).
 ```
-require __DIR__ . '/vendor/autoload.php';
+require <YOUR PROJECT DIR> . '/vendor/autoload.php';
 ```
 
-Create object manager instance with your project base directory
+To load an object, just call the **getObject** function and set namespace as string using / instead of \
 ```
-$objectManager = new Webmgine\ObjectManager(__DIR__);
+use Webmgine\ObjectManager;
+ObjectManager::getObject('Namespace/As/String');
+```
+or
+```
+\Webmgine\ObjectManager::getObject('Namespace/As/String');
 ```
 
-Load object
-```
-$object = $objectManager->getObject('Namespace/Class');
-```
+## Options
 
-## Custom arguments
+### Custom arguments (data)
 
-You can set custom arguments in a array using **array key** => **construct var name** association
-```
-$object = $objectManager->getObject('ExempleNamespace/ExempleClass', ['demo2' => 'exemple text']);
-```
+You can manually set arguments in a array using **array key** => **construct var name** association
 ```
 namespace ExempleNamespace;
 
@@ -37,16 +35,19 @@ class ExempleClass{
     public function __construct(
         \ExempleNamespace\ExempleClass2 $demo1,
         string $demo2
-    ){
+    ) {
         // $demo1 -> Instance of \ExempleNamespace\ExempleClass2 class
         // $demo2 -> 'exemple text' (use custom argument from array associated by the array key and the var name)
     }
 }
 ```
-
-## Cache
-
-Object are cached by namespace. If you load multiple time the same object you will receive a copy of the first one loaded (newly created object won't get new custom arguments if you set any after the inital load). It is possible to force the object to reset by using the **getNewObject** method.
 ```
-$object = $objectManager->getNewObject('Namespace/Class');
+ObjectManager::getObject('ExempleNamespace/ExempleClass', ['data' => ['demo2' => 'exemple text']]);
+```
+
+### Singletons (singleton)
+
+You can set singleton to true, this will make the object manager return an existing object if any
+```
+ObjectManager::getObject('ExempleNamespace/ExempleClass', ['singleton' => true]);
 ```

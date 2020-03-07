@@ -1,176 +1,53 @@
 <?php
 namespace Webmgine;
+use Exception;
+use ReflectionClass;
 
-class ObjectManager{
+class ObjectManager {
 
-    protected $baseDir = '';
-    protected $baseVarType = [
-        "boolean",
-        "integer",
-        "double",
-        "string",
-        "array",
-        "object",
-        "resource",
-        "resource (closed)",
-        "NULL",
-        "unknown type",
-    ];
-    protected $devMode = false;
-    protected $state = [
-        'error' => false,
-        'logs' => []
-    ];
-    protected $jsonMemory = [];
-    protected $objectMemory = [];
-    protected $tmpDir = '';
+    const OPT_DATA = 'data';
+    const OPT_SINGLETON = 'singleton';
 
-    public function __construct(string $baseDir, bool $devMode = false){
-        $this->baseDir = realpath($baseDir);
-        if($this->baseDir === false){
-            $this->state['error'] = true;
-            $this->state['logs'][] = 'Base directory '.$baseDir.' is missing';
-            return;
-        }
-        $this->baseDir = $this->baseDir.'/';
-        $this->devMode = $devMode;
-        $this->tmpDir = __DIR__.'/../tmp/';
-    }
+    protected static array $loadedObjects = [];
 
-    public function filePathFromNamespace(string $namespace, string $fileExt = '.php'):string{
-        $filePath = realpath($this->baseDir.str_replace('\\', DS, $namespace).$fileExt);
-        if($filePath === false){
-            return '';
+    public static function getObject(string $key, array $options = []) {
+        $singleton = (isset($options[self::OPT_SINGLETON]) && is_bool($options[self::OPT_SINGLETON]) ? $options[self::OPT_SINGLETON] : false);
+        if ($singleton && isset(self::$loadedObjects[$key])) {
+            return self::$loadedObjects[$key];
         }
-        return $filePath;
-    }
-
-    public function getNewObject(string $namespace, array $arguments = []){
-        return $this->getObject($namespace, $arguments, true);
-    }
-
-    public function getObject(string $namespace, array $arguments = [], bool $reload = false){
-        $this->state['error'] = false;
-        if($reload == false && isset($this->objectMemory[$namespace])){
-            return $this->objectMemory[$namespace];
-        }
-        $realNamespace = '\\'.str_replace('/', '\\', $namespace);
-        $dependencies = $this->setDependencies($namespace, $arguments, $reload);
-        if($this->state['error']){
-            return null;
-        }
-        if(!$dependencies){
-            $this->objectMemory[$namespace] = new $realNamespace;
-            return $this->objectMemory[$namespace];
-        }
-        $indexFilePath = $this->tmpDir.md5(str_replace('\\', '/', $namespace)).'.tmp';
-        $dependenciesList = json_decode(file_get_contents($indexFilePath));
-        $dependencies = [];
-        $objectData = '(';
-        $first = true;
-        foreach($dependenciesList AS $depVar => $depVal){
-            $dependencies[$depVar] = $depVal;
-            if(substr($depVar, 0, 2) === 'o_'){
-                $dependencies[$depVar] = $this->getObject($depVal);
-            }
-            $objectData .= ($first?'':',').'$dependencies["'.$depVar.'"]';
-            $first = false;
-        }
-        $objectData .= ')';
-        eval('$this->objectMemory[$namespace] = new '.$realNamespace.$objectData.';');
-        return $this->objectMemory[$namespace];
-    }
-
-    public function setDependencies(string $namespace, array $arguments = [], bool $reload = false):bool{
-        $realNamespace = str_replace('/', '\\', $namespace);
-        // Check if construct method exist
-        if(!class_exists($realNamespace)){
-            $this->state['error'] = true;
-            $this->state['logs'][] = 'Class '.$namespace.' is missing';
-            return false;
-        }
-        $classReflection = new \ReflectionClass($realNamespace);
+        $namespace = self::toNamespace($key);
+        // Reflect class
+        $classReflection = new ReflectionClass($namespace);
         $construct = $classReflection->getConstructor();
-        if(is_null($construct)){
-			return false;
-        }
-        // Check if file index exists
-        $indexFilePath = $this->tmpDir.md5(str_replace('\\', '/', $namespace)).'.tmp';
-        if((!$this->devMode && !$reload) && realpath($indexFilePath) !== false){
-            return true;
+        if (is_null($construct)) {
+			self::$loadedObjects[$key] = new $namespace;
+            return self::$loadedObjects[$key];
         }
         $constructRequirements = $construct->getParameters();
-        if(count($constructRequirements) < 1){
-            if(realpath($indexFilePath) !== false){
-                unlink($indexFilePath);
-            }
-			return false;
+        if (count($constructRequirements) < 1) {
+            self::$loadedObjects[$key] = new $namespace;
+            return self::$loadedObjects[$key];
         }
-        if(realpath($indexFilePath) !== false){
-            if($this->devMode){
-                // Compare construct requirements with index file
-                $currentIndexState = true;
-                $currentIndexReq = json_decode(file_get_contents($indexFilePath));
-                foreach($constructRequirements AS $req){
-                    if(
-                        is_null($req->getType()) ||
-                        in_array($req->getType(), $this->baseVarType)
-                    ){
-                        if(isset($arguments[$req->getName()]) && $currentIndexReq['v_'.$req->getName()] === $arguments[$req->getName()]){
-                            continue;
-                        }
-                        $currentIndexState = false;
-                        break;
-                    }
-                    $reqName = $req->getName();
-                    $reqType = $req->getType()->getName();
-                    if(
-                        !isset($currentIndexReq->$reqName) ||
-                        $currentIndexReq->$reqName !== $reqType
-                    ){
-                        $currentIndexState = false;
-                        break;
-                    }
-                }
-                if($currentIndexState){
-                    return true;
-                }
-                unlink($indexFilePath);
-            }
-            else if($reload){
-                unlink($indexFilePath);
-            }
-        }
-        // List dependencies
-        $dependencies = [];
-		foreach($constructRequirements AS $req){
-            if(
-                is_null($req->getType()) ||
-                in_array($req->getType(), $this->baseVarType)
-            ){
-                if(!isset($arguments[$req->getName()])){
-                    if($req->isOptional()){
-                        continue;
-                    }
-                    $this->state['error'] = true;
-                    $this->state['logs'][] = 'Argument '.$req->getName().' is missing';
-                    return false;
-                }
-                $dependencies['v_'.$req->getName()] = $arguments[$req->getName()];
+        // List arguments
+        $arguments = [];
+		foreach ($constructRequirements AS $requirement) {
+            $var = $requirement->getName();
+            $type = $requirement->getType();
+            $data = (isset($options[self::OPT_DATA]) && isset($options[self::OPT_DATA][$var]) ? $options[self::OPT_DATA][$var] : null);
+            if (!is_null($data)) {
+                $arguments[$var] = $data;
                 continue;
+            } else if (is_null($type)) {
+                throw new Exception('Non typed variable not set: '. $var);
             }
-            $reqFilename = str_replace('\\', '/', $req->getType()->getName());
-            $reqFilePath = realpath($this->filePathFromNamespace($reqFilename));
-            if($reqFilePath === false){
-				return false;
-			}
-            $dependencies['o_'.$req->getName()] = str_replace('\\', '/', $req->getType()->getName());
+            $arguments[$var] = self::getObject(str_replace('\\', '/', $type->getName()));
         }
-        file_put_contents($indexFilePath, json_encode($dependencies));
-        return true;
+        // Create object
+        self::$loadedObjects[$key] = $classReflection->newInstanceArgs($arguments);
+        return self::$loadedObjects[$key];
     }
 
-    public function getState(){
-        return $this->state;
+    protected static function toNamespace(string $key): string {
+        return (substr($key, 0 , 1) !== '/' ? '\\' : '').str_replace('/', '\\', $key);
     }
 }
