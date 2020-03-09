@@ -40,7 +40,7 @@ class ObjectManager {
             } else if (is_null($type)) {
                 throw new Exception('Non typed variable not set: '. $var);
             }
-            $arguments[$var] = self::getObject(str_replace('\\', '/', $type->getName()));
+            $arguments[$var] = self::getObject(str_replace('\\', '/', $type->getName()), [self::OPT_SINGLETON => true]);
         }
         // Create object
         self::$loadedObjects[$key] = $classReflection->newInstanceArgs($arguments);
